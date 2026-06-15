@@ -33,3 +33,4 @@ The flowchart visually structures:
 * **Database Models**: Ranks, schedules, student information, and dojos.
 * **REST APIs**: Paths like `/api/courses` and `/api/belt-system` fetching from database storage.
 * **Admin CMS**: The administrative console used to manage academy settings, notifications, grades, and schedules.
+# bki-website
