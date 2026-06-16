@@ -1,17 +1,44 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
+
+// Module-level cache to persist preloaded images and load state across page navigations
+const cache = {
+  images: [],
+  loadedCount: 0,
+  isFullyLoaded: false,
+  isPreloadStarted: false,
+  listeners: new Set(),
+}
+
+const defaultPathTemplate = (i) => `/all_video_frames/frame_${String(i).padStart(5, '0')}.jpg`
 
 /**
  * useScrollCanvas
- * Loads 240 animation frames and drives them with window scroll.
+ * Loads animation frames and drives them with window scroll.
  * Returns: { canvasRef, loading, progress }
  */
-export function useScrollCanvas(frameCount = 300) {
+export function useScrollCanvas(options = {}) {
+  // Support both passing a number (legacy) or a config object
+  const isLegacy = typeof options === 'number'
+  const frameCount = isLegacy ? options : (options.frameCount ?? 300)
+  const pathTemplate = isLegacy ? null : options.pathTemplate
+  const startIndex = isLegacy ? 0 : (options.startIndex ?? 0)
+  const cropBottom = isLegacy ? 60 : (options.cropBottom ?? 60)
+  const alignX = isLegacy ? 'right' : (options.alignX ?? 'right')
+
+  // Stable path resolver to prevent effect teardowns on every render
+  const getPath = useMemo(() => {
+    return pathTemplate || defaultPathTemplate
+  }, [pathTemplate])
+
   const canvasRef  = useRef(null)
-  const images     = useRef([])
   const currentIdx = useRef(0)
   const ctxRef     = useRef(null)
-  const [loading,  setLoading]  = useState(true)
-  const [progress, setProgress] = useState(0)
+
+  // Initialize loading state directly from global cache
+  const [loading,  setLoading]  = useState(!cache.isFullyLoaded)
+  const [progress, setProgress] = useState(
+    cache.isFullyLoaded ? 100 : Math.round((cache.loadedCount / frameCount) * 100)
+  )
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -29,13 +56,23 @@ export function useScrollCanvas(frameCount = 300) {
       let drawW, drawH
 
       if (isPortrait) {
-        // Portrait (mobile): scale to cover the viewport height so the characters
-        // are always fully visible top-to-bottom. The canvas will be wider than
-        // the viewport and gets clipped horizontally by the overflow:hidden container.
         drawH = vh
         drawW = Math.round(vh * aspect)
+
+        if (alignX === 'right') {
+          canvas.style.left      = 'auto'
+          canvas.style.right     = '0px'
+          canvas.style.transform = 'translate(0%, -50%)'
+        } else if (alignX === 'left') {
+          canvas.style.left      = '0px'
+          canvas.style.right     = 'auto'
+          canvas.style.transform = 'translate(0%, -50%)'
+        } else {
+          canvas.style.left      = '50%'
+          canvas.style.right     = 'auto'
+          canvas.style.transform = 'translate(-50%, -50%)'
+        }
       } else {
-        // Landscape (desktop/tablet): cover the full viewport
         if (vw / vh > aspect) {
           drawW = vw
           drawH = Math.round(vw / aspect)
@@ -43,23 +80,48 @@ export function useScrollCanvas(frameCount = 300) {
           drawH = vh
           drawW = Math.round(vh * aspect)
         }
+
+        canvas.style.left      = '50%'
+        canvas.style.right     = 'auto'
+        canvas.style.transform = 'translate(-50%, -50%)'
       }
 
-      canvas.width  = drawW
-      canvas.height = drawH
+      const dpr = Math.min(2, window.devicePixelRatio || 1)
+      canvas.width  = drawW * dpr
+      canvas.height = drawH * dpr
       canvas.style.position  = 'absolute'
-      canvas.style.left      = '50%'
       canvas.style.top       = '50%'
       canvas.style.width     = drawW + 'px'
       canvas.style.height    = drawH + 'px'
-      canvas.style.transform = 'translate(-50%, -50%)'
     }
 
-    /* ── Draw one frame (crops bottom 60px of source) ── */
+    /* ── Draw one frame (crops bottom of source, fallback to nearest loaded frame) ── */
     function drawFrame(idx) {
-      const img = images.current[idx]
-      if (img && img.complete && img.naturalWidth) {
-        const srcH = img.naturalHeight - 60
+      let img = null
+      const imagesList = cache.images
+      
+      if (imagesList[idx] && imagesList[idx].complete && imagesList[idx].naturalWidth) {
+        img = imagesList[idx]
+      } else {
+        let dist = 1
+        while (dist < frameCount) {
+          const prev = idx - dist
+          const next = idx + dist
+          if (prev >= 0 && imagesList[prev] && imagesList[prev].complete && imagesList[prev].naturalWidth) {
+            img = imagesList[prev]
+            break
+          }
+          if (next < frameCount && imagesList[next] && imagesList[next].complete && imagesList[next].naturalWidth) {
+            img = imagesList[next]
+            break
+          }
+          dist++
+        }
+      }
+
+      if (img) {
+        const srcH = img.naturalHeight - cropBottom
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
         ctx.drawImage(img, 0, 0, img.naturalWidth, srcH, 0, 0, canvas.width, canvas.height)
       }
     }
@@ -71,34 +133,86 @@ export function useScrollCanvas(frameCount = 300) {
       return st / max
     }
 
+    let ticking = false
     function updateFrame() {
-      const p   = getProgress()
-      const idx = Math.min(frameCount - 1, Math.ceil(p * frameCount))
-      if (idx !== currentIdx.current) {
-        currentIdx.current = idx
-        drawFrame(idx)
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const p   = getProgress()
+          const idx = Math.min(frameCount - 1, Math.ceil(p * frameCount))
+          if (idx !== currentIdx.current) {
+            currentIdx.current = idx
+            drawFrame(idx)
+          }
+          ticking = false
+        })
+        ticking = true
       }
     }
 
-    /* ── Load all frames ── */
-    let loaded = 0
     resizeCanvas()
 
-    // Disable scroll animation on mobile by only loading the first frame
-    const isMobile = window.innerWidth <= 768
-    const framesToLoad = isMobile ? 1 : frameCount
+    let isDismissed = cache.isFullyLoaded
+    const minRequired = Math.min(10, frameCount)
 
-    for (let i = 0; i < framesToLoad; i++) {
-      const img = new Image()
-      img.src = `/all_video_frames/frame_${String(i).padStart(5, '0')}.jpg`
-      images.current.push(img)
+    const dismissLoader = () => {
+      if (!isDismissed) {
+        isDismissed = true
+        setLoading(false)
+        drawFrame(currentIdx.current)
+      }
+    }
 
-      img.onload = img.onerror = () => {
-        loaded++
-        setProgress(Math.round((loaded / framesToLoad) * 100))
-        if (loaded === framesToLoad) {
-          setLoading(false)
-          drawFrame(0)
+    // Progress listener callback
+    const handleProgressUpdate = (loaded, isFull) => {
+      setProgress(Math.round((loaded / frameCount) * 100))
+      drawFrame(currentIdx.current)
+      if (loaded >= minRequired || isFull) {
+        dismissLoader()
+      }
+    }
+
+    cache.listeners.add(handleProgressUpdate)
+
+    // Initial draw if cache already has some images
+    if (cache.images.length > 0) {
+      drawFrame(currentIdx.current)
+    }
+
+    // If we already satisfied the minRequired on mount, dismiss immediately
+    if (cache.loadedCount >= minRequired || cache.isFullyLoaded) {
+      dismissLoader()
+    }
+
+    let safetyTimeout = null
+
+    if (!cache.isFullyLoaded) {
+      safetyTimeout = setTimeout(() => {
+        dismissLoader()
+      }, 1500)
+
+      if (!cache.isPreloadStarted) {
+        cache.isPreloadStarted = true
+        cache.images = []
+        cache.loadedCount = 0
+
+        for (let i = 0; i < frameCount; i++) {
+          const img = new Image()
+          cache.images.push(img)
+
+          img.onload = img.onerror = () => {
+            cache.loadedCount++
+            const isFull = cache.loadedCount === frameCount
+            if (isFull) {
+              cache.isFullyLoaded = true
+            }
+
+            // Notify active listeners
+            cache.listeners.forEach((listener) => {
+              listener(cache.loadedCount, isFull)
+            })
+          }
+
+          img.src = getPath(startIndex + i)
         }
       }
     }
@@ -108,8 +222,12 @@ export function useScrollCanvas(frameCount = 300) {
 
     return () => {
       window.removeEventListener('scroll', updateFrame)
+      cache.listeners.delete(handleProgressUpdate)
+      if (safetyTimeout) {
+        clearTimeout(safetyTimeout)
+      }
     }
-  }, [frameCount])
+  }, [frameCount, startIndex, cropBottom, getPath, alignX])
 
   return { canvasRef, loading, progress }
 }

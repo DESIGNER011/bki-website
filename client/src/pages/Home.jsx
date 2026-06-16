@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useScrollCanvas } from '../hooks/useScrollCanvas'
 
 export default function Home() {
-  const { canvasRef, loading, progress } = useScrollCanvas(240)
-  const speedOverlayRef = useRef(null)
+  const [activeIdx, setActiveIdx] = useState(0)
+  const [resetKey, setResetKey] = useState(0)
+
   const autoplayActive = useRef(false)
   const autoplayTimeout = useRef(null)
   const currentSectionIdx = useRef(0)
@@ -18,113 +18,88 @@ export default function Home() {
     'why-choose-section'
   ]
 
-  /* ── Particles & Speed Lines Generation ── */
+  const slides = [
+    {
+      eyebrow: "Traditional Shotokan Dojo",
+      title: "Discipline & Strength",
+      description: "Train in authentic Japanese Shotokan Karate. Build self-defense, focus, and physical conditioning under certified instructors.",
+      detailedDescription: "Embark on the traditional journey from White Belt (10th Kyu) to Black Belt (1st Dan and beyond). This program follows the authentic Shotokan Karate syllabus, approved by certified Japanese Karate Masters.",
+      cardTitle: "Traditional Dojo",
+      cardSubtitle: "Shotokan Karate",
+      image: "/karate_slide_shotokan.png",
+      focus: [
+        "Core Kihon (basics: stances, blocks, punches, kicks)",
+        "Standard Shotokan Katas (forms: Heian series, Tekki, Bassai Dai, etc.)",
+        "Kumite (controlled sparring: Gohon, Ippon, and Jiyu Kumite)",
+        "Dojo Kun principles (character, sincerity, effort, etiquette, self-control)"
+      ]
+    },
+    {
+      eyebrow: "Youth Character Building",
+      title: "Confidence & Respect",
+      description: "Build confidence, concentration, and coordination through age-appropriate training. Teaching critical life skills for tomorrow.",
+      detailedDescription: "Designed specifically for children aged 4 to 12. We focus on teaching discipline, respect, and self-confidence through active play and structured martial arts training.",
+      cardTitle: "Kids Program",
+      cardSubtitle: "Ages 4-12",
+      image: "/karate_slide_kids.png",
+      focus: [
+        "Motor skills, agility, and body coordination",
+        "Respect for self and others, focus, and listening skills",
+        "Basic self-defense and anti-bullying awareness",
+        "Goal setting through a progressive belt system"
+      ]
+    },
+    {
+      eyebrow: "Adult Martial Arts",
+      title: "Physical & Mental Balance",
+      description: "Transform fitness, relieve stress, and master realistic self-defense. Accessible to all skill levels from beginners to black belts.",
+      detailedDescription: "For adults of all ages and fitness levels. This course blends intense physical conditioning, flexibility training, and realistic self-defense skills with traditional karate forms.",
+      cardTitle: "Adult Classes",
+      cardSubtitle: "Ages 18+",
+      image: "/karate_slide_adults.png",
+      focus: [
+        "High-intensity cardio conditioning and core strength training",
+        "Practical self-defense tactics and close-quarters combat techniques",
+        "Advanced martial arts forms and applications (Bunkai)",
+        "Stress relief, mental focus, and meditation practices"
+      ]
+    },
+    {
+      eyebrow: "Elite Competition Training",
+      title: "Speed & Precision",
+      description: "Master WKF sparring regulations, athletic speed drills, and advanced Kata expression. For competitors aspiring to state and national stages.",
+      detailedDescription: "A specialized program for athletes looking to compete in state, national, and international karate tournaments. We focus on modern sports karate regulations, tactical scoring, and speed drills.",
+      cardTitle: "Tournament Prep",
+      cardSubtitle: "Elite Sparring",
+      image: "/karate_slide_tournament.png",
+      focus: [
+        "WKF (World Karate Federation) rules and scoring strategies",
+        "High-speed competition sparring (Kumite) drills and timing",
+        "Precision and expression in Tournament Kata execution",
+        "Mental toughness, performance psychology, and stamina training"
+      ]
+    }
+  ]
+
+  // Auto-play timer: 5 seconds per slide for the hero slider
   useEffect(() => {
-    // Generate particles
-    const pContainer = document.getElementById('particles-container')
-    if (pContainer) {
-      pContainer.innerHTML = ''
-      for (let i = 0; i < 35; i++) {
-        const p = document.createElement('div')
-        p.className = 'particle'
-        p.style.left = `${Math.random() * 100}vw`
-        p.style.setProperty('--size', `${3 + Math.random() * 7}px`)
-        p.style.setProperty('--opacity', `${0.2 + Math.random() * 0.5}`)
-        p.style.setProperty('--drift', `${-50 + Math.random() * 100}px`)
-        p.style.setProperty('--duration', `${6 + Math.random() * 8}s`)
-        p.style.animationDelay = `${Math.random() * 5}s`
-        pContainer.appendChild(p)
-      }
-    }
+    const timer = setTimeout(() => {
+      handleNextSlide()
+    }, 5000)
+    return () => clearTimeout(timer)
+  }, [activeIdx, resetKey])
 
-    // Generate speed lines
-    const sOverlay = speedOverlayRef.current
-    if (sOverlay) {
-      sOverlay.innerHTML = ''
-      for (let i = 0; i < 40; i++) {
-        const line = document.createElement('div')
-        line.className = 'speed-line'
-        line.style.setProperty('--angle', `${Math.random() * 360}deg`)
-        line.style.setProperty('--width', `${100 + Math.random() * 150}px`)
-        line.style.setProperty('--speed', `${0.1 + Math.random() * 0.15}s`)
-        sOverlay.appendChild(line)
-      }
-    }
-  }, [])
+  const handleNextSlide = () => {
+    setActiveIdx((prev) => (prev + 1) % slides.length)
+    setResetKey((prev) => prev + 1)
+  }
 
-  /* ── Spotlight Tracking & GSAP Setup ── */
-  useEffect(() => {
-    if (loading) return
+  const handleCardClick = (targetIdx) => {
+    setActiveIdx(targetIdx)
+    setResetKey((prev) => prev + 1)
+  }
 
-    // Card Spotlight cursor tracking
-    const homeCards = document.querySelectorAll('.home-card')
-    const onMouseMove = (e) => {
-      const card = e.currentTarget
-      const rect = card.getBoundingClientRect()
-      const x = e.clientX - rect.left
-      const y = e.clientY - rect.top
-      card.style.setProperty('--mouse-x', `${x}px`)
-      card.style.setProperty('--mouse-y', `${y}px`)
-    }
-    homeCards.forEach(c => c.addEventListener('mousemove', onMouseMove))
-
-    // GSAP ScrollTrigger Section Reveals
-    let gsapTriggers = []
-    const gsap = window.gsap
-    const ScrollTrigger = window.ScrollTrigger
-
-    if (gsap && ScrollTrigger) {
-      gsap.registerPlugin(ScrollTrigger, window.ScrollToPlugin)
-
-      // Animate card entries and h2 energy glow
-      gsap.utils.toArray('.journey-reveal').forEach(section => {
-        const header = section.querySelector('h2')
-        const trigger = ScrollTrigger.create({
-          trigger: section,
-          start: "top 80%",
-          toggleClass: "active",
-          onToggle: self => {
-            if (header) {
-              if (self.isActive) header.classList.add('energy-glow-active')
-              else header.classList.remove('energy-glow-active')
-            }
-          }
-        })
-        gsapTriggers.push(trigger)
-      })
-
-      // Hero Title Animation zoom trigger
-      const heroTitle = document.querySelector('.hero-title')
-      if (heroTitle) {
-        const titleTrigger = ScrollTrigger.create({
-          trigger: heroTitle,
-          start: "top 80%",
-          onEnter: () => {
-            setTimeout(() => heroTitle.classList.add('zoom-in'), 150)
-          }
-        })
-        gsapTriggers.push(titleTrigger)
-      }
-
-      ScrollTrigger.refresh()
-    } else {
-      // Fallback simple IntersectionObserver reveals
-      const reveals = document.querySelectorAll('.journey-reveal')
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.classList.add('active')
-          }
-        })
-      }, { threshold: 0.25 })
-      reveals.forEach(el => observer.observe(el))
-    }
-
-    return () => {
-      homeCards.forEach(c => c.removeEventListener('mousemove', onMouseMove))
-      gsapTriggers.forEach(t => t.kill())
-    }
-  }, [loading])
+  const allIndices = slides.map((_, i) => i)
 
   /* ── Autoplay Scroll Journey Logic ── */
   useEffect(() => {
@@ -136,9 +111,6 @@ export default function Home() {
       autoplayActive.current = false
       if (window.gsap) {
         window.gsap.killTweensOf(window)
-      }
-      if (speedOverlayRef.current) {
-        speedOverlayRef.current.classList.remove('active')
       }
     }
 
@@ -164,21 +136,40 @@ export default function Home() {
     }
   }, [])
 
+  // Scroll reveal: add shadow class to cards when they scroll into view
+  useEffect(() => {
+    const cards = document.querySelectorAll('.home-card')
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('shadow-active')
+        } else {
+          entry.target.classList.remove('shadow-active')
+        }
+      })
+    }, {
+      threshold: 0.2,
+      rootMargin: '0px 0px -10% 0px'
+    })
+
+    cards.forEach(card => observer.observe(card))
+    return () => observer.disconnect()
+  }, [])
+
   const scrollToSection = (targetId) => {
     if (!autoplayActive.current) return
 
-    const sOverlay = speedOverlayRef.current
-    if (sOverlay) sOverlay.classList.add('active')
+    const navH = window.innerWidth <= 768 ? 62 : 80
+    const targetEl = document.getElementById(targetId)
+    if (!targetEl) return
 
     const gsap = window.gsap
     if (gsap && window.ScrollToPlugin) {
       gsap.to(window, {
-        scrollTo: { y: `#${targetId}`, autoKill: false },
-        duration: 0.5,
+        scrollTo: { y: `#${targetId}`, offsetY: navH, autoKill: false },
+        duration: 0.8,
         ease: "power2.inOut",
         onComplete: () => {
-          if (sOverlay) sOverlay.classList.remove('active')
-
           autoplayTimeout.current = setTimeout(() => {
             currentSectionIdx.current++
             if (currentSectionIdx.current < sections.length) {
@@ -186,13 +177,13 @@ export default function Home() {
             } else {
               autoplayActive.current = false
             }
-          }, 500)
+          }, 2000)
         }
       })
     } else {
-      const targetEl = document.getElementById(targetId)
-      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth' })
-      if (sOverlay) sOverlay.classList.remove('active')
+      const rect = targetEl.getBoundingClientRect()
+      const targetY = window.pageYOffset + rect.top - navH
+      window.scrollTo({ top: targetY, behavior: 'smooth' })
 
       autoplayTimeout.current = setTimeout(() => {
         currentSectionIdx.current++
@@ -201,18 +192,12 @@ export default function Home() {
         } else {
           autoplayActive.current = false
         }
-      }, 700)
+      }, 2500)
     }
   }
 
-  const startAutoplay = (e) => {
+  const startJourney = (e) => {
     e.preventDefault()
-    if (window.innerWidth <= 768) {
-      // On mobile, just scroll smoothly to the first content section and center it
-      const targetEl = document.getElementById(sections[0])
-      if (targetEl) targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' })
-      return
-    }
     autoplayActive.current = true
     currentSectionIdx.current = 0
     scrollToSection(sections[0])
@@ -220,211 +205,250 @@ export default function Home() {
 
   return (
     <>
-      {/* Loader */}
-      {loading && (
-        <div id="loader" className="loader-overlay">
-          <h2>Loading Bushido Karate...</h2>
-          <p id="loader-text">Initializing Dojo {progress}%</p>
+      {/* Hero Slider Section (The first page) */}
+      <div className="samurai-slider-container">
+        {/* Full-width Slides Background View */}
+        {slides.map((slide, idx) => (
+          <div 
+            key={idx} 
+            className={`samurai-slider-slide ${idx === activeIdx ? 'active' : ''}`}
+          >
+            <div className="samurai-slider-overlay" />
+          </div>
+        ))}
+
+        {/* Staggered Entrance Text Contents (Left Panel) */}
+        <div className="samurai-slider-content">
+          <div key={activeIdx} className="samurai-slider-text-wrapper">
+            <span className="eyebrow">{slides[activeIdx].eyebrow}</span>
+            <h2>{slides[activeIdx].title}</h2>
+            <p>{slides[activeIdx].description}</p>
+          </div>
+          <div className="samurai-actions-row">
+            <button 
+              className="samurai-btn-primary" 
+              onClick={startJourney}
+            >
+              Start Journey
+            </button>
+          </div>
         </div>
-      )}
 
-      {/* Floating Particles & Anime overlays */}
-      <div id="particles-container" className="particles-container" />
-      <div ref={speedOverlayRef} id="speed-lines-overlay" className="speed-lines-overlay" />
+        {/* Floating Preview Cards List (Right Panel) */}
+        <div className="samurai-slider-cards-list">
+          {allIndices.map((slideIdx) => (
+            <div 
+              key={slideIdx} 
+              className={`samurai-slider-card-item${slideIdx === activeIdx ? ' samurai-card-active' : ''}`}
+              onClick={() => handleCardClick(slideIdx)}
+            >
+              <img 
+                src={slides[slideIdx].image} 
+                alt={slides[slideIdx].cardTitle} 
+                className="samurai-slider-card-img"
+              />
+              <div className="samurai-slider-card-overlay" />
+              <div className="samurai-slider-card-info">
+                <h4>{slides[slideIdx].cardTitle}</h4>
+                <span>{slides[slideIdx].cardSubtitle}</span>
+              </div>
+              {slideIdx === activeIdx && (
+                <div className="samurai-card-active-indicator" />
+              )}
+            </div>
+          ))}
+        </div>
 
-      {/* Canvas */}
-      <div className="canvas-container">
-        <canvas ref={canvasRef} id="scrollCanvas" />
+        {/* Floating Scroll Button at the bottom center of the hero slider */}
+        <button className="samurai-scroll-btn" onClick={startJourney}>
+          <span>Start Journey</span>
+          <svg className="samurai-scroll-chevron" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+        </button>
       </div>
 
-      {/* Hero Section */}
-      <section className="scroll-section hero-section" id="hero-section">
-        <div className="hero-content fade-in">
-          <h1 className="hero-title">Forge Character.<br />Build <span className="text-gold">Strength.</span></h1>
-          <div className="hero-actions">
-            <button className="btn btn-gold btn-next-section" style={{ border: 'none' }} onClick={startAutoplay}>START THE JOURNEY</button>
-          </div>
-        </div>
-      </section>
-
-      {/* Legacy Section */}
-      <section className="scroll-section card-section journey-reveal" id="legacy-section">
-        <div className="home-card stagger-2" style={{ alignSelf: 'flex-end' }}>
-          <div className="card-glow-overlay" />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 className="text-gold">Our Legacy</h2>
-            <p>Founded in 2001 with a vision to spread Martial Arts, Self Defence, Discipline, Fitness, and Confidence.</p>
-            <p>For more than 25 years, Best Karate of India has been transforming lives through traditional martial arts training and character development.</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Master Section */}
-      <section className="scroll-section card-section journey-reveal" id="master-section">
-        <div className="home-card stagger-2" style={{ alignSelf: 'flex-start' }}>
-          <div className="card-glow-overlay" />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 className="text-gold">Master's Journey</h2>
-            <h3 style={{ color: '#ffffff', marginBottom: '0.25rem' }}>A.G. Prasanth Kumar</h3>
-            <p className="text-gold" style={{ fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: 'normal', letterSpacing: '1px' }}>5th Dan Black Belt Practitioner</p>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '1.5rem', color: '#ffffff' }}>
-              <li style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">🥋</span> 25+ Years of Shotokan Karate Experience</li>
-              <li style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">🥋</span> Dedicated Karate Instructor</li>
-              <li style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">🥋</span> Martial Arts &amp; Fitness Trainer</li>
-            </ul>
-            <h4 className="text-gold" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Milestones:</h4>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#ffffff' }}>
-              <div><strong className="text-gold">2001</strong> – Founded Best Karate of India</div>
-              <div><strong className="text-gold">2015</strong> – Achieved 5th Dan Black Belt</div>
-              <div><strong className="text-gold">Present</strong> – Training Hundreds of Martial Artists</div>
+      {/* Scroll Sections Container with maroon gradient background */}
+      <div className="home-sections-container">
+        {/* Legacy Section */}
+        <section className="scroll-section card-section card-on-right" id="legacy-section">
+          <h2 className="journey-section-title">Our Legacy</h2>
+          <div className="home-card">
+            <div className="card-glow-overlay" />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <p>Founded in 2001 with a vision to spread Martial Arts, Self Defence, Discipline, Fitness, and Confidence.</p>
+              <p>For more than 25 years, Best Karate of India has been transforming lives through traditional martial arts training and character development.</p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Achievements Section */}
-      <section className="scroll-section card-section journey-reveal" id="achievements-section">
-        <div className="home-card stagger-2" style={{ alignSelf: 'flex-end' }}>
-          <div className="card-glow-overlay" />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 className="text-gold">Achievements &amp; Training</h2>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h4 className="text-gold" style={{ marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Achievements:</h4>
-              <div style={{ marginBottom: '0.4rem', color: '#ffffff' }}><span style={{ fontSize: '1.1rem', marginRight: '0.4rem' }}>🏆</span> World Record Achievement</div>
-              <div style={{ marginBottom: '0.4rem', color: '#ffffff' }}><span style={{ fontSize: '1.1rem', marginRight: '0.4rem' }}>🏆</span> Abdul Kalam Academy Best Practitioner Award</div>
-            </div>
-            <div style={{ marginBottom: '1.5rem' }}>
-              <h4 className="text-gold" style={{ marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Certified By:</h4>
-              <ul style={{ listStyle: 'none', padding: 0, marginBottom: 0, color: '#ffffff' }}>
-                <li style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">✓</span> Japanese Karate Masters</li>
-                <li style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">✓</span> Senior Masters from India</li>
+        {/* Master Section */}
+        <section className="scroll-section card-section card-on-left" id="master-section">
+          <h2 className="journey-section-title">Master's Journey</h2>
+          <div className="home-card">
+            <div className="card-glow-overlay" />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <h3 style={{ color: '#ffffff', marginBottom: '0.25rem' }}>A.G. Prasanth Kumar</h3>
+              <p className="text-gold" style={{ fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: 'normal', letterSpacing: '1px' }}>5th Dan Black Belt Practitioner</p>
+              <ul style={{ listStyle: 'none', padding: 0, marginBottom: '1.5rem', color: '#ffffff' }}>
+                <li style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">🥋</span> 25+ Years of Shotokan Karate Experience</li>
+                <li style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">🥋</span> Dedicated Karate Instructor</li>
+                <li style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">🥋</span> Martial Arts &amp; Fitness Trainer</li>
               </ul>
-            </div>
-            <div>
-              <h4 className="text-gold" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Programs:</h4>
-              <div className="home-programs-grid">
-                <div style={{ display: 'flex', alignHTML: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>🥋</span> Shotokan Karate</div>
-                <div style={{ display: 'flex', alignHTML: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>🧘</span> Yoga Asanas</div>
-                <div style={{ display: 'flex', alignHTML: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>⚔️</span> Silambam</div>
-                <div style={{ display: 'flex', alignHTML: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>💪</span> Fitness Training</div>
+              <h4 className="text-gold" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Milestones:</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', color: '#ffffff' }}>
+                <div><strong className="text-gold">2001</strong> – Founded Best Karate of India</div>
+                <div><strong className="text-gold">2015</strong> – Achieved 5th Dan Black Belt</div>
+                <div><strong className="text-gold">Present</strong> – Training Hundreds of Martial Artists</div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Impact Section */}
-      <section className="scroll-section card-section journey-reveal" id="impact-section">
-        <div className="home-card stagger-2" style={{ alignSelf: 'flex-start', maxWidth: '550px' }}>
-          <div className="card-glow-overlay" />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 className="text-gold" style={{ marginBottom: '1.5rem' }}>Our Impact</h2>
-            <div className="home-stats-grid">
-              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1.25rem', borderRadius: '8px', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
-                <div className="text-gold" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>200+</div>
-                <div style={{ color: '#ffffff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Members</div>
+        {/* Achievements Section */}
+        <section className="scroll-section card-section card-on-right" id="achievements-section">
+          <h2 className="journey-section-title">Achievements &amp; Training</h2>
+          <div className="home-card">
+            <div className="card-glow-overlay" />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 className="text-gold" style={{ marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Achievements:</h4>
+                <div style={{ marginBottom: '0.4rem', color: '#ffffff' }}><span style={{ fontSize: '1.1rem', marginRight: '0.4rem' }}>🏆</span> World Record Achievement</div>
+                <div style={{ marginBottom: '0.4rem', color: '#ffffff' }}><span style={{ fontSize: '1.1rem', marginRight: '0.4rem' }}>🏆</span> Abdul Kalam Academy Best Practitioner Award</div>
               </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1.25rem', borderRadius: '8px', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
-                <div className="text-gold" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>200+</div>
-                <div style={{ color: '#ffffff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Students Trained</div>
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 className="text-gold" style={{ marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Certified By:</h4>
+                <ul style={{ listStyle: 'none', padding: 0, marginBottom: 0, color: '#ffffff' }}>
+                  <li style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">✓</span> Japanese Karate Masters</li>
+                  <li style={{ marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span className="text-gold">✓</span> Senior Masters from India</li>
+                </ul>
               </div>
-              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1.25rem', borderRadius: '8px', textAlign: 'center', backdropFilter: 'blur(10px)', gridColumn: 'span 2' }}>
-                <div className="text-gold" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>500–1000</div>
-                <div style={{ color: '#ffffff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Black Belt Holders</div>
-              </div>
-            </div>
-            <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1rem 1.25rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ffffff', backdropFilter: 'blur(10px)' }}>
-              <span style={{ fontSize: '1.3rem' }}>📍</span>
-              <div style={{ textAlign: 'left' }}>
-                <div className="text-gold" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.15rem' }}>Presence</div>
-                <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Pollachi, Coimbatore, Pondicherry, Palakkad</div>
+              <div>
+                <h4 className="text-gold" style={{ marginBottom: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem' }}>Programs:</h4>
+                <div className="home-programs-grid">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>🥋</span> Shotokan Karate</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>🧘</span> Yoga Asanas</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>🏋️</span> Silambam</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}><span style={{ fontSize: '1.1rem' }}>💪</span> Fitness Training</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Training Experience Section */}
-      <section className="scroll-section card-section journey-reveal" id="experience-section">
-        <div className="home-card stagger-2" style={{ alignSelf: 'flex-end', maxWidth: '520px' }}>
-          <div className="card-glow-overlay" />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 className="text-gold" style={{ marginBottom: '1.5rem' }}>Training Experience</h2>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', paddingLeft: '1.5rem', borderLeft: '2px dashed rgba(245, 158, 11, 0.3)', marginLeft: '0.5rem', color: '#ffffff', textAlign: 'left' }}>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: -'2.05rem', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
-                <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Beginner</h4>
-                <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Start with no experience. Welcome to the Dojo.</p>
+        {/* Impact Section */}
+        <section className="scroll-section card-section card-on-left" id="impact-section">
+          <h2 className="journey-section-title">Our Impact</h2>
+          <div className="home-card" style={{ maxWidth: '550px' }}>
+            <div className="card-glow-overlay" />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <div className="home-stats-grid">
+                <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1.25rem', borderRadius: '8px', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+                  <div className="text-gold" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>200+</div>
+                  <div style={{ color: '#ffffff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Active Members</div>
+                </div>
+                <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1.25rem', borderRadius: '8px', textAlign: 'center', backdropFilter: 'blur(10px)' }}>
+                  <div className="text-gold" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>200+</div>
+                  <div style={{ color: '#ffffff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Students Trained</div>
+                </div>
+                <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1.25rem', borderRadius: '8px', textAlign: 'center', backdropFilter: 'blur(10px)', gridColumn: 'span 2' }}>
+                  <div className="text-gold" style={{ fontSize: '2rem', fontWeight: 800, marginBottom: '0.25rem' }}>500–1000</div>
+                  <div style={{ color: '#ffffff', fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Black Belt Holders</div>
+                </div>
               </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
-                <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Learn Basics &amp; Build Discipline</h4>
-                <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Master the stances, blocks, punches, and dojo etiquette.</p>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
-                <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Master Techniques</h4>
-                <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Advance through Kata and Kumite training schedules.</p>
-              </div>
-              <div style={{ position: 'relative' }}>
-                <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
-                <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Earn Black Belt &amp; Become a Martial Artist</h4>
-                <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Reach peak performance, self-mastery, and leadership.</p>
+              <div style={{ background: 'rgba(255, 255, 255, 0.03)', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '1rem 1.25rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '0.75rem', color: '#ffffff', backdropFilter: 'blur(10px)' }}>
+                <span style={{ fontSize: '1.3rem' }}>📍</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div className="text-gold" style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: '0.15rem' }}>Presence</div>
+                  <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>Pollachi, Coimbatore, Pondicherry, Palakkad</div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Why Choose Section */}
-      <section className="scroll-section card-section journey-reveal" id="why-choose-section">
-        <div className="home-card stagger-2" style={{ alignSelf: 'flex-start', maxWidth: '520px' }}>
-          <div className="card-glow-overlay" />
-          <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 className="text-gold" style={{ marginBottom: '1.5rem' }}>Why Choose Us</h2>
-            <ul style={{ listStyle: 'none', padding: 0, marginBottom: '2rem', color: '#ffffff', textAlign: 'left' }}>
-              <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
-                <div>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>25+ Years Experience</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#ccc' }}>A legacy of expert leadership and teaching.</span>
+        {/* Training Experience Section */}
+        <section className="scroll-section card-section card-on-right" id="experience-section">
+          <h2 className="journey-section-title">Training Experience</h2>
+          <div className="home-card" style={{ maxWidth: '520px' }}>
+            <div className="card-glow-overlay" />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', position: 'relative', paddingLeft: '1.5rem', borderLeft: '2px dashed rgba(245, 158, 11, 0.3)', marginLeft: '0.5rem', color: '#ffffff', textAlign: 'left' }}>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
+                  <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Beginner</h4>
+                  <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Start with no experience. Welcome to the Dojo.</p>
                 </div>
-              </li>
-              <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
-                <div>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Authentic Shotokan Training</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#ccc' }}>True traditional forms and applications.</span>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
+                  <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Learn Basics &amp; Build Discipline</h4>
+                  <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Master the stances, blocks, punches, and dojo etiquette.</p>
                 </div>
-              </li>
-              <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
-                <div>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Traditional + Modern Approach</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#ccc' }}>Merging ancient wisdom with modern athletic conditioning.</span>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
+                  <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Master Techniques</h4>
+                  <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Advance through Kata and Kumite training schedules.</p>
                 </div>
-              </li>
-              <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
-                <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
-                <div>
-                  <strong style={{ display: 'block', fontSize: '0.95rem' }}>Physical &amp; Mental Growth</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#ccc' }}>Forging character, self-control, and resilience.</span>
+                <div style={{ position: 'relative' }}>
+                  <div style={{ position: 'absolute', left: '-2.05rem', top: '0.15rem', width: '12px', height: '12px', borderRadius: '50%', background: 'var(--gold)', border: '2px solid #000' }}></div>
+                  <h4 className="text-gold" style={{ fontSize: '1rem', marginBottom: '0.15rem' }}>Earn Black Belt &amp; Become a Martial Artist</h4>
+                  <p style={{ marginBottom: 0, fontSize: '0.85rem', color: '#ccc', fontWeight: 'normal', textShadow: 'none' }}>Reach peak performance, self-mastery, and leadership.</p>
                 </div>
-              </li>
-            </ul>
-
-            <div style={{ borderLeft: '3px solid var(--gold)', padding: '0.75rem 0 0.75rem 1.25rem', background: 'rgba(245, 158, 11, 0.04)', borderRadius: '0 8px 8px 0', marginBottom: '2rem', textAlign: 'left' }}>
-              <p style={{ fontStyle: 'italic', marginBottom: 0, color: '#ffffff', fontSize: '1.05rem', fontWeight: 500, textShadow: 'none', lineHeight: '1.4' }}>
-                "Your Journey Towards Strength Begins Here"
-              </p>
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem' }}>
-              <Link to="/contact" className="btn btn-gold" style={{ textShadow: 'none' }}>JOIN OUR ACADEMY</Link>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        {/* Why Choose Section */}
+        <section className="scroll-section card-section card-on-left" id="why-choose-section">
+          <h2 className="journey-section-title">Why Choose Us</h2>
+          <div className="home-card" style={{ maxWidth: '520px' }}>
+            <div className="card-glow-overlay" />
+            <div style={{ position: 'relative', zIndex: 2 }}>
+              <ul style={{ listStyle: 'none', padding: 0, marginBottom: '2rem', color: '#ffffff', textAlign: 'left' }}>
+                <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>25+ Years Experience</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#ccc' }}>A legacy of expert leadership and teaching.</span>
+                  </div>
+                </li>
+                <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Authentic Shotokan Training</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#ccc' }}>True traditional forms and applications.</span>
+                  </div>
+                </li>
+                <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Traditional + Modern Approach</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#ccc' }}>Merging ancient wisdom with modern athletic conditioning.</span>
+                  </div>
+                </li>
+                <li style={{ marginBottom: '0.75rem', display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
+                  <span className="text-gold" style={{ fontSize: '1.2rem', lineHeight: 1 }}>✓</span>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '0.95rem' }}>Physical &amp; Mental Growth</strong>
+                    <span style={{ fontSize: '0.8rem', color: '#ccc' }}>Forging character, self-control, and resilience.</span>
+                  </div>
+                </li>
+              </ul>
+
+              <div style={{ borderLeft: '3px solid var(--gold)', padding: '0.75rem 0 0.75rem 1.25rem', background: 'rgba(245, 158, 11, 0.04)', borderRadius: '0 8px 8px 0', marginBottom: '2rem', textAlign: 'left' }}>
+                <p style={{ fontStyle: 'italic', marginBottom: 0, color: '#ffffff', fontSize: '1.05rem', fontWeight: 500, textShadow: 'none', lineHeight: '1.4' }}>
+                  "Your Journey Towards Strength Begins Here"
+                </p>
+              </div>
+
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <Link to="/contact" className="btn btn-gold" style={{ textShadow: 'none' }}>JOIN OUR ACADEMY</Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
     </>
   )
 }
