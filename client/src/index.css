@@ -1383,9 +1383,11 @@ button {
   flex-direction: column;
   gap: 1.25rem;
   padding: 2.25rem;
-  background: rgba(255, 255, 255, 0.015);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  background: rgba(11, 15, 25, 0.7) !important;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   transition: opacity 0.6s ease, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.4s ease, background-color 0.4s ease, box-shadow 0.4s ease;
   opacity: 0;
   transform: scale(0.85) translateY(40px);
@@ -1462,7 +1464,658 @@ button {
   opacity: 1;
 }
 
-/* Syllabus Requirements Layout */
+/* ── Interactive Full-Screen Canvas Belt Layout ── */
+.belt-system-page {
+  background-color: transparent !important;
+  color: #fff !important;
+  min-height: 100vh;
+}
+.belt-system-page h1,
+.belt-system-page h2,
+.belt-system-page h3,
+.belt-system-page h4,
+.belt-system-page p,
+.belt-system-page span,
+.belt-system-page strong {
+  color: #fff !important;
+  text-shadow: none !important;
+}
+.belt-system-page .text-gold {
+  color: #D4A017 !important;
+}
+
+.belt-interactive-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  position: relative;
+  gap: 0;
+  background-color: transparent;
+}
+
+.belt-full-canvas-container {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #05080f;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Right-side gradient vignette that blends the canvas into the card panel */
+.belt-full-canvas-container::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 48%;
+  background: linear-gradient(
+    to right,
+    transparent 0%,
+    rgba(5, 8, 15, 0.35) 30%,
+    rgba(5, 8, 15, 0.72) 60%,
+    rgba(5, 8, 15, 0.92) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.belt-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.belt-canvas-wrapper canvas {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  background: transparent;
+  z-index: 2;
+}
+
+.belt-scroll-panel {
+  width: 42%;
+  margin-left: auto;
+  padding: 3rem 3rem 6rem 2rem;
+  position: relative;
+  z-index: 5;
+}
+
+.belt-scroll-section {
+  min-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 4rem 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  opacity: 0.4;
+  transform: translateY(20px);
+}
+
+.belt-scroll-section.active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.belt-scroll-section:last-child {
+  border-bottom: none;
+  margin-bottom: 15vh;
+}
+
+/* Active Highlight Styling for Belt Cards */
+.belt-scroll-section.active .belt-card {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  border-color: var(--belt-accent-color);
+  box-shadow: 
+    0 20px 60px rgba(0, 0, 0, 0.6),
+    0 0 40px var(--belt-accent-glow),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(10, 14, 26, 0.88) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.belt-scroll-section.active .belt-visual-strip {
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 15px rgba(0, 0, 0, 0.5),
+    0 0 22px var(--belt-accent-glow);
+}
+
+/* Side Timeline Dot Indicator */
+.belt-timeline-nav {
+  position: fixed;
+  right: 2.5rem;
+  top: 55%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  z-index: 100;
+  padding: 1rem 0.5rem;
+  background: rgba(5, 8, 15, 0.5);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.belt-timeline-dot-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.85rem;
+  cursor: pointer;
+  padding: 0.25rem 0.6rem;
+  position: relative;
+}
+
+.belt-timeline-label {
+  font-size: 0.72rem;
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateX(10px);
+  transition: opacity 0.3s ease, transform 0.3s ease, color 0.2s ease;
+  pointer-events: none;
+  white-space: nowrap;
+  position: absolute;
+  right: 2.2rem;
+}
+
+.belt-timeline-dot-wrapper:hover .belt-timeline-label,
+.belt-timeline-dot-wrapper.active .belt-timeline-label {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.belt-timeline-dot-wrapper.active .belt-timeline-label {
+  color: var(--belt-dot-color);
+}
+
+.belt-timeline-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.belt-timeline-dot-wrapper:hover .belt-timeline-dot {
+  transform: scale(1.25);
+  background: var(--belt-dot-color);
+  border-color: var(--belt-dot-color);
+  box-shadow: 0 0 10px var(--belt-dot-color);
+}
+
+.belt-timeline-dot-wrapper.active .belt-timeline-dot {
+  transform: scale(1.4);
+  background: var(--belt-dot-color);
+  border-color: var(--belt-dot-color);
+  box-shadow: 0 0 16px var(--belt-dot-color);
+}
+
+/* Canvas loading state */
+.belt-canvas-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #05080f;
+  z-index: 20;
+  color: #fff;
+  gap: 1.25rem;
+  animation: fadeInLoader 0.5s ease;
+}
+
+@keyframes fadeInLoader {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.belt-canvas-loader h3 {
+  font-size: 1.25rem;
+  color: #D4A017;
+  letter-spacing: 2px;
+  margin: 0;
+  text-shadow: 0 0 20px rgba(212, 160, 23, 0.5);
+}
+
+.belt-canvas-loader p {
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+/* Animated progress bar for loader */
+.belt-loader-bar {
+  width: 180px;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  position: relative;
+}
+
+.belt-loader-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #D4A017, #f59e0b);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  box-shadow: 0 0 8px rgba(212, 160, 23, 0.6);
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .belt-interactive-container {
+    flex-direction: column;
+  }
+  
+  .belt-sticky-panel {
+    position: sticky;
+    top: var(--nav-h);
+    width: 100%;
+    height: 38vh;
+    height: 38dvh;
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 10;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+  }
+  
+  .belt-canvas-wrapper canvas {
+    max-width: 90%;
+    max-height: 90%;
+  }
+  
+  .belt-scroll-panel {
+    width: 100%;
+    padding: 2rem 1.25rem;
+  }
+
+  .belt-full-canvas-container::after {
+    display: none;
+  }
+  
+  .belt-scroll-section {
+    min-height: unset;
+    padding: 3.5rem 0;
+    opacity: 0.7;
+  }
+  
+  .belt-scroll-section.active {
+    opacity: 1;
+  }
+  
+  .belt-timeline-nav {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════
+   BSP — Belt System Page (centered column layout)
+   ══════════════════════════════════════════════ */
+
+/* Centered layout wrapper */
+.bsp-layout {
+  position: relative;
+  min-height: calc(100vh - var(--nav-h, 80px));
+  width: 100%;
+  background: var(--bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 1.5rem;
+  box-sizing: border-box;
+  z-index: 1;
+  transition: var(--theme-transition);
+  overflow-y: auto;
+}
+
+/* Container holds both canvas and content card centered together */
+.bsp-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 680px;
+  min-height: 480px; /* guarantees vertical space for the canvas background overlay */
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Card content wrapper (above canvas) */
+.bsp-content-overlay {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  pointer-events: auto;
+  z-index: 2;
+}
+
+/* Transparent card styling (no background, borders, or shadows) */
+.bsp-overlay-card {
+  width: 100%;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  padding: 0.5rem 0;
+  box-sizing: border-box;
+  color: var(--text-1);
+  text-align: center;
+  transition: var(--theme-transition);
+  position: relative;
+  overflow: visible;
+  --label-color: var(--belt-accent-color);
+}
+
+/* Override the white belt accent color in light mode for readability */
+.bsp-overlay-card[style*="#e2e8f0"] {
+  --label-color: #6b7280; /* dark grey for light mode contrast */
+}
+
+/* Keep the white belt accent color readable in dark mode */
+[data-theme="dark"] .bsp-overlay-card[style*="#e2e8f0"] {
+  --label-color: #e2e8f0;
+}
+
+/* Card title row centered */
+.bsp-card-title-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Active belt colored dot indicator */
+.bsp-belt-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin: 0 auto 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  transition: all 0.4s ease;
+}
+
+[data-theme="dark"] .bsp-belt-dot {
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+/* Belt title */
+.bsp-belt-name {
+  font-size: 1.75rem;
+  font-weight: 800;
+  margin: 0.25rem 0;
+  line-height: 1.2;
+  color: var(--text-1);
+  letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+/* Kyu text */
+.bsp-kyu {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-2);
+  opacity: 0.8;
+}
+
+/* Description paragraph */
+.bsp-belt-desc {
+  font-size: 1rem;
+  color: var(--text-2);
+  max-width: 580px;
+  margin: 0.5rem auto;
+  line-height: 1.6;
+}
+
+/* Requirements section */
+.bsp-belt-req {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  margin: 0.5rem 0 0;
+  line-height: 1.5;
+}
+
+.bsp-belt-req strong {
+  color: var(--text-1);
+}
+
+.bsp-star {
+  font-size: 1.3rem;
+  margin-top: 0.25rem;
+  animation: starPulse 2.5s infinite alternate ease-in-out;
+}
+
+@keyframes starPulse {
+  0% { transform: scale(1); filter: drop-shadow(0 0 2px rgba(212, 160, 23, 0.4)); }
+  100% { transform: scale(1.15); filter: drop-shadow(0 0 8px rgba(212, 160, 23, 0.8)); }
+}
+
+/* Syllabus grid inside card (3 columns on desktop) */
+.bsp-syllabus-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+/* Glassy transparent outline items for syllabus details */
+.bsp-syllabus-item {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1rem;
+  text-align: center;
+  transition: var(--theme-transition);
+}
+
+.bsp-syllabus-item:hover {
+  border-color: var(--label-color, var(--belt-accent-color, var(--border-strong)));
+  box-shadow: 0 4px 12px var(--belt-accent-glow, rgba(0,0,0,0.05));
+  transform: translateY(-2px);
+}
+
+.bsp-syllabus-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--label-color, var(--belt-accent-color, #D4A017));
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  margin: 0 0 0.5rem 0;
+  transition: color 0.4s ease;
+}
+
+.bsp-syllabus-text {
+  font-size: 0.85rem;
+  color: var(--text-2);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Canvas Panel - Positioned absolutely in the background behind the card as a watermark */
+.bsp-canvas-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 900px; /* Big background image on desktop view */
+  max-width: 95vw;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  overflow: hidden;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.18; /* soft watermark background blending in light mode */
+  transition: var(--theme-transition);
+}
+
+[data-theme="dark"] .bsp-canvas-panel {
+  opacity: 0.45; /* slightly brighter watermark for dark theme contrast */
+}
+
+.bsp-canvas-panel canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+
+/* Loader styling inside canvas container */
+.belt-canvas-loader {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: #fff;
+  z-index: 10;
+  gap: 0.75rem;
+}
+
+.belt-canvas-loader h3 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.belt-canvas-loader p {
+  font-size: 0.85rem;
+  color: #a1a1aa;
+  margin: 0;
+}
+
+/* Active belt name badge centered overlaid at the bottom of the canvas */
+.bsp-active-badge {
+  position: absolute;
+  bottom: 0.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  z-index: 5;
+  pointer-events: none;
+  animation: bspBadgeFade 0.5s ease;
+}
+
+@keyframes bspBadgeFade {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to   { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.bsp-badge-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.bsp-badge-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+/* Active card transition fade-in */
+.bsp-card-animate {
+  animation: bspCardFadeIn 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes bspCardFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── Mobile View Overrides (fully responsive) ── */
+@media (max-width: 768px) {
+  .bsp-layout {
+    padding: 1.5rem 1rem;
+  }
+  
+  .bsp-container {
+    min-height: 380px;
+  }
+
+  .bsp-overlay-card {
+    padding: 0.5rem 0;
+  }
+
+  .bsp-belt-name {
+    font-size: 1.4rem;
+  }
+
+  .bsp-kyu {
+    font-size: 0.85rem;
+  }
+
+  .bsp-belt-desc {
+    font-size: 0.9rem;
+    line-height: 1.5;
+  }
+
+  .bsp-syllabus-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+  }
+
+  .bsp-syllabus-item {
+    padding: 0.75rem;
+  }
+
+  .bsp-canvas-panel {
+    width: 380px; /* smaller background image on mobile view */
+    max-width: 95vw;
+  }
+}
+
+
 .syllabus-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
